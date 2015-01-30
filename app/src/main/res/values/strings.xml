@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Tests</string>
+    <string name="hint_email">E-Mail</string>
+    <string name="action_send">send</string>
+    <string name="error_title">Notice</string>
+    <string name="error_message">Transmission failed.</string>
+</resources>
