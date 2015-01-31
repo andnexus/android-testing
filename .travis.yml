@@ -1,35 +1,50 @@
 language: android
-
-android:
-  components:
-    - build-tools-21.1.2
-    - android-21
-    - extra-google-m2repository
-    - extra-android-m2repository
-    - sys-img-armeabi-v7a-android-19
-  licenses:
-    - 'android-sdk-license-.+'
-    - 'google-gdk-license-.+'
-
-jdk: oraclejdk7
-  
-notifications:
-  email: false
-
-before_install:
-  - export TERM=dumb
-  - ./gradlew -v
-  - uname -a
-
-before_script:
-  - echo no | android create avd --force -n test -t android-19 --abi armeabi-v7a
-  - emulator -avd test -no-skin -no-audio -no-window &
-  - android-wait-for-emulator
-  - adb shell input keyevent 82 &
-
-script:
-  - ./gradlew clean connectedCheck
+env:
+  global:
+    - sudo: false
+    - cache: true
+    - TERM=dumb # Collect gradle output
+    
+jdk:
+  - oraclejdk7
 
 cache:
   directories:
-    - $HOME/.gradle/caches/
+    - $HOME/.m2
+    
+env:
+  global:
+    - TERM=dumb
+
+before_install:
+  - chmod +x gradlew
+  - export TERM=dumb
+  - ./gradlew -v
+  - uname -a
+    
+android:
+  components:
+    - build-tools-21.1.2
+    - platform-tools
+    - tools
+    - android-21
+    - extra-google-m2repository
+    - extra-android-m2repository
+  licenses:
+    - 'android-sdk-license-.+'
+    - 'google-gdk-license-.+'
+    
+notifications:
+  email: false
+
+before_script:
+  - echo no | android create avd --force --name test --target android-19 --abi armeabi-v7a
+  - emulator -avd test -no-skin -no-audio -no-window &
+  - android-wait-for-emulator
+  - adb shell input keyevent 82 & # Disable lock screen
+
+script:
+  # Necessary in Container-Based-Infrastructure on Travis CI
+  - mvn org.apache.maven.plugins:maven-dependency-plugin:2.1:get -DrepoUrl=https://oss.sonatype.org/content/repositories/snapshots -Dartifact=com.google.dagger:dagger:2.0-SNAPSHOT
+  - ./gradlew build -PdisablePreDex
+  - ./gradlew connectedAndroidTest -PdisablePreDex

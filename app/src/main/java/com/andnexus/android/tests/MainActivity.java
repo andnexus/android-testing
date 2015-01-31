@@ -1,25 +1,55 @@
 package com.andnexus.android.tests;
 
-import android.app.AlertDialog;
-import android.app.DialogFragment;
+import com.andnexus.connect.Connect;
+import com.andnexus.model.Data;
+
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+import android.widget.TextView;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import butterknife.ButterKnife;
+import butterknife.InjectView;
 import dagger.Provides;
 
+import static com.andnexus.connect.Connect.ConnectException;
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends ActionBarActivity implements SwipeRefreshLayout.OnRefreshListener {
 
     @Inject
     ConnectivityManager mConnectivityManager;
+
+    @Inject
+    Connect mConnect;
+
+    @InjectView(R.id.refresh)
+    SwipeRefreshLayout mRefreshView;
+
+    @InjectView(R.id.empty)
+    TextView mEmptyView;
+
+    @InjectView(R.id.list)
+    ListView mListView;
+
+    ArrayAdapter<Data> mAdapter;
+
+    List<Data> mData = new ArrayList<Data>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,7 +57,24 @@ public class MainActivity extends ActionBarActivity {
 
         ((App) getApplication()).graph().inject(this);
 
-        setContentView(R.layout.contact);
+        setContentView(R.layout.activity_main);
+        ButterKnife.inject(this);
+
+        onCreateListView();
+        onCreateRefreshView();
+
+        onRefresh();
+    }
+
+    private void onCreateListView() {
+        mListView.setEmptyView(mEmptyView);
+        mAdapter = new ArrayAdapter(this, android.R.layout.simple_list_item_1, mData);
+        mListView.setAdapter(mAdapter);
+    }
+
+    private void onCreateRefreshView() {
+        mRefreshView.setOnRefreshListener(this);
+        mRefreshView.setRefreshing(true);
     }
 
     @Override
@@ -38,37 +85,56 @@ public class MainActivity extends ActionBarActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-
-        switch (item.getItemId()) {
-            case R.id.action_send:
-                if (isOffline()) {
-                    new Dialog().show(getFragmentManager(), "error");
-                }
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
+        if (item.getItemId() == R.id.action_refresh) {
+            onRefresh();
         }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onRefresh() {
+
+        new AsyncTask<Void, Void, List<Data>>() {
+
+            @Override
+            protected void onPreExecute() {
+                super.onPreExecute();
+                mData.clear();
+                mAdapter.notifyDataSetChanged();
+                mEmptyView.setText(null);
+            }
+
+            @Override
+            protected List<Data> doInBackground(Void... params) {
+                List<Data> data = Collections.EMPTY_LIST;
+                try {
+                    data = mConnect.getData();
+                } catch (ConnectException e) {
+                    Log.e("Connect", e.getMessage(), e);
+                }
+                return data;
+            }
+
+            @Override
+            protected void onPostExecute(List<Data> data) {
+                super.onPostExecute(data);
+                if (isOffline()) {
+                    mEmptyView.setText(R.string.offline);
+                    mRefreshView.setRefreshing(false);
+                } else if (data.size() == 0) {
+                    mEmptyView.setText(R.string.empty);
+                } else {
+                    mData.addAll(data);
+                    mAdapter.notifyDataSetChanged();
+                }
+                mRefreshView.setRefreshing(false);
+            }
+        }.execute();
     }
 
     private boolean isOffline() {
         final NetworkInfo activeNetworkInfo = mConnectivityManager.getActiveNetworkInfo();
         return activeNetworkInfo == null || !activeNetworkInfo.isConnected();
-    }
-
-    public static class Dialog extends DialogFragment {
-
-        public Dialog() {
-
-        }
-
-        @Override
-        public android.app.Dialog onCreateDialog(Bundle savedInstanceState) {
-            return new AlertDialog.Builder(getActivity())
-                    .setTitle(R.string.error_title)
-                    .setMessage(R.string.error_message)
-                    .setPositiveButton(android.R.string.ok, null)
-                    .create();
-        }
     }
 
     @dagger.Module
@@ -84,6 +150,12 @@ public class MainActivity extends ActionBarActivity {
         @Singleton
         public ConnectivityManager provideConnectivityManager() {
             return (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+        }
+
+        @Provides
+        @Singleton
+        public Connect provideConnect() {
+            return new Connect(mContext.getString(R.string.url_backend));
         }
 
     }

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<web-app>
+    <servlet>
+        <servlet-name>Data</servlet-name>
+        <servlet-class>com.andnexus.backend.DataServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>Data</servlet-name>
+        <url-pattern>/data</url-pattern>
+    </servlet-mapping>
+    <welcome-file-list>
+        <welcome-file>index.jsp</welcome-file>
+    </welcome-file-list>
+</web-app>

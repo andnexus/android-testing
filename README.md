@@ -1,17 +1,59 @@
 # Automatische Tests für Android
 
-Der Prozess der Qualitätssicherung von Software wird unter anderem durch automatische Testverfahren greifbar. Mit [Dagger](http://google.github.com/dagger), [Mockito](https://code.google.com/p/mockito/) und [Espresso](https://code.google.com/p/android-test-kit) lassen sich Tests für Android entwerfen, die die manuellen Aufwände sofort spürrbar reduzieren.
 
-## Praktisches Beispiel
+Der Prozess der Qualitätssicherung von Software wird unter anderem durch automatische Testverfahren greifbar. Mit [Dagger](http://google.github.com/dagger), [Mockito](https://code.google.com/p/mockito/) und [Espresso](https://code.google.com/p/android-test-kit) lassen sich Tests für Android entwerfen, die die manuellen Testaufwände drastisch reduzieren können.
 
-Eine überzeugende App muss auch mit Ausnahmefällen geschickt umgehen. Die Präsentationen von zielführenden Hinweisen zur Problemlösung ist ein konkretes Beispiel dafür. Kritische Zustände zu provozieren, kann in manuellen Tests mit unter schwierig werden. Mittels passend gewählter Software-Architektur und moderner Test-Strategien ist dies allerdings zuverlässig machbar. Das lässt eine überprüfbare Refaktorisierung zu und beschleunigt die Release-Zyklen.
+[![Build Status](https://travis-ci.org/andnexus/android-testing.svg?branch=master)](https://travis-ci.org/andnexus/android-testing)
 
-Netzwerkverbindungsstatus prüfen
---------
+# Praktisches Beispiel
 
-In der Activity wird der ConnectivityManager mittels Dagger Dependency Injection bereitgestellt.
+Eine Webanwendung soll Daten über eine Schnittstelle an eine App ausliefern.
 
-```java
+## Backend
+
+Die Webanwendung nach der Java-Servlet-Spezifikation liefert unter dem Pfad ```/backend/data``` das JSON Objekt ```{data:[{"id":123},{"id":456}]}``` aus.
+
+## Model
+
+Das Datenmodell bildet die JSON Struktur in einer Klasse ab.
+
+## Connect
+
+Liefert die Datenmodelle aus der Webanwendung an die App aus.
+
+## App
+
+Android App Komponenten.
+
+## Web
+
+Diese Softwarearchitektur lässt zu, dass mit dem [Google Web Toolkit](http://www.gwtproject.org) die Module Model und Connect in JavaScript übersetzt werden können.
+
+## iOS
+
+Mittels [J2ObjC](https://github.com/google/j2objc) können die Module Model und Connect automatisch auf iOS portiert werden.
+
+# Testplan
+
+## Modultests
+
+Die Java Module Model, Connect und Backend werden mit JUnit4 und unter Einsatz von Mockito getestet.
+
+	./gradlew test
+	
+![Screenshot](assets/java-connect-tests.png "Tests")
+
+Mittels Jacoco lässt sich beim Java Modul Connect eine Testabdeckung von 100% nachweisen.
+
+	./gradlew jacocoTestReport
+	
+![Screenshot](assets/java-connect-jacoco.png "Code coverage")
+
+## Android
+
+In der Activity wird z.B. der ConnectivityManager mittels Dagger Dependency Injection bereitgestellt.
+	
+```
 private boolean isOffline() {
 
   final NetworkInfo activeNetworkInfo = mConnectivityManager.getActiveNetworkInfo();
@@ -21,31 +63,57 @@ private boolean isOffline() {
   
 Der UI Test mit Espresso ermöglicht das gewünschte Verhalten der App während der unterschiedlichen Verbindungszustände nachzuweisen.
 
-```java
-public void testShouldDisplayErrorDialog() {
-
+```
+public void testShouldDisplayOfflineHint() {
+	
   when(mConnectivityManager.getActiveNetworkInfo().isConnected()).thenReturn(false);
 
-  onView(withId(R.id.action_send))
-        .check(matches(isDisplayed()))
-        .perform(click());
-
-  onView(withText(mActivity.getString(R.string.error_title)))
-        .check(matches(isDisplayed()));
+  onView(withId(R.id.refresh))
+    .perform(swipeDown());
+                
+  onView(withText(mActivity.getString(R.string.offline)))
+    .check(matches(isDisplayed()));
 }
 ```
-![Screenshot](https://github.com/andnexus/android-testing/raw/master/screenshot.png "Screenshot")
 
-## Continuous Integration
+Die Android Komponenten werden mit plattformeigenen testing APIs, Espresso und JUnit3 getestet.
 
-Nach Änderungen am Quellcode müssen die Variationen der App [gebaut und getestet](https://travis-ci.org/andnexus/android-testing) werden. Mit einem Pull-Request auf einen dedizierten Branch kann hiermit auch die Verteilung des Build-Artefakts im [Google Play Store](https://play.google.com) samt Listings wie Screenshots und Neuerungen angestoßen werden. [Mehr Erfahren...](http://www.andnexus.com)
+	./gradlew connectedCheck
+	
+![Screenshot](assets/android-testing.gif "UI Tests")
 
-[![Build Status](https://travis-ci.org/andnexus/android-testing.svg?branch=master)](https://travis-ci.org/andnexus/android-testing)
+## Integrationstests
+
+Im Connect-Modul sind für den Gradle Task ```integrationTest``` Tests hinterlegt. Dabei wird zu beginn das Backend gebaut und ist anschließend unter ```http://localhost:8000``` erreichbar. Damit der Task nicht blockiert wird muss folgende Einstellung gesetzt sein.
+
+	org.gradle.daemon=false
+	
+Mit dem starten des Tasks ```test``` wird automatisch auch der Task ```integrationTest``` angestoßen.
+
+Nach Änderungen am Quellcode werden die Variationen der App, das Connect-Modul und das Backend automatisch [gebaut, gestartet und getestet](https://travis-ci.org/andnexus/android-testing).
+
+## Manuelle Tests
+
+Ein Variant besteht aus Product-Flavor und Build-Type. Variants mit Build-Type Debug sind ausschließlich für automatische Tests vorgesehen. Build-Types vom Typ Release erwarten eine Instanz des Backends hinter der URL oder IP der folgenden Android-Ressource.
+
+	<string name="url_backend">INSERT_YOUR_URI</string>
+
+Ein einfacher Weg ist die folgende Einstellung sicherzustellen
+
+	org.gradle.daemon=true
+	
+und mit 
+
+	./gradlew jettyRun
+	
+eine Backend-Instanz zu starten. Dieser Task läuft bis man ihn in der Konsole beendet und lässt manuelle Test in der App zu. Alternativ kann man auch ein Web Application Archive bauen und auf einen Server laden.
+
+# Continuous Delivery
+
+Der letze Schritt ist die Apps zu verteilen. Die [Google Play Publisher API](https://developers.google.com/android-publisher) erlaubt hier automisch Build-Artefakte auf den Stages Alpha, Beta und Production zu platzieren. Damit lassen sich Apps an ausgewählte Tester oder alle Play Store Benutzer verteilen. [Mehr Erfahren...](http://www.andnexus.com)
 
 License
 -------
-
-Copyright 2014 The Android Open Source Project, Inc.
 
 Licensed to the Apache Software Foundation (ASF) under one or more contributor
 license agreements.  See the NOTICE file distributed with this work for
