@@ -3,7 +3,9 @@ package com.andnexus.android.tests;
 import com.andnexus.connect.Connect;
 import com.andnexus.model.Data;
 
+import android.app.KeyguardManager;
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -55,6 +57,8 @@ public class MainActivity extends ActionBarActivity implements SwipeRefreshLayou
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        disableLockScreen();
+
         ((App) getApplication()).graph().inject(this);
 
         setContentView(R.layout.activity_main);
@@ -64,6 +68,19 @@ public class MainActivity extends ActionBarActivity implements SwipeRefreshLayou
         onCreateRefreshView();
 
         onRefresh();
+    }
+
+    /**
+     * Disable device lock screen for UI testing.
+     */
+    private void disableLockScreen() {
+        // http://developer.android.com/tools/testing/activity_testing.html#UnlockDevice
+        final boolean isDebuggable = (0 != (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE));
+        if (isDebuggable) {
+            KeyguardManager keyguardManager = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+            KeyguardManager.KeyguardLock lock = keyguardManager.newKeyguardLock(MainActivity.class.getSimpleName());
+            lock.disableKeyguard();
+        }
     }
 
     private void onCreateListView() {
@@ -118,11 +135,12 @@ public class MainActivity extends ActionBarActivity implements SwipeRefreshLayou
             @Override
             protected void onPostExecute(List<Data> data) {
                 super.onPostExecute(data);
-                if (isOffline()) {
-                    mEmptyView.setText(R.string.offline);
-                    mRefreshView.setRefreshing(false);
-                } else if (data.size() == 0) {
-                    mEmptyView.setText(R.string.empty);
+                if (data.size() == 0) {
+                    if (isOffline()) {
+                        mEmptyView.setText(R.string.offline);
+                    } else {
+                        mEmptyView.setText(R.string.empty);
+                    }
                 } else {
                     mData.addAll(data);
                     mAdapter.notifyDataSetChanged();

@@ -61,6 +61,7 @@ public class MainActivityTest extends ActivityTest {
         // Test
         refresh();
 
+        when(mConnect.getData()).thenReturn(Collections.EMPTY_LIST);
         when(mConnectivityManager.getActiveNetworkInfo().isConnected()).thenReturn(false);
 
         refresh();
