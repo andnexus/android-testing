@@ -101,6 +101,5 @@ public class MainActivityTest extends ActivityTest {
                 .inAdapterView(withId(R.id.list))
                 .atPosition(99)
                 .check(matches(withText("99")));
-
     }
 }
