@@ -1,0 +1,6 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          package="com.andnexus.android.tests">
+
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD"/>
+
+</manifest>

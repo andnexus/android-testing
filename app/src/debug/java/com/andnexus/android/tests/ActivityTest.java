@@ -1,5 +1,7 @@
 package com.andnexus.android.tests;
 
+import com.andnexus.connect.Connect;
+
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -19,6 +21,9 @@ public abstract class ActivityTest extends ActivityInstrumentationTestCase2<Main
     @Inject
     ConnectivityManager mConnectivityManager;
 
+    @Inject
+    Connect mConnect;
+
     public ActivityTest() {
         super(MainActivity.class);
     }
@@ -35,10 +40,13 @@ public abstract class ActivityTest extends ActivityInstrumentationTestCase2<Main
     public static final class Module {
 
         @Mock
-        ConnectivityManager connectivityManager;
+        ConnectivityManager mConnectivityManager;
 
         @Mock
-        NetworkInfo networkInfo;
+        NetworkInfo mNetworkInfo;
+
+        @Mock
+        Connect mConnect;
 
         public Module() {
             MockitoAnnotations.initMocks(this);
@@ -47,8 +55,14 @@ public abstract class ActivityTest extends ActivityInstrumentationTestCase2<Main
         @Provides
         @Singleton
         public ConnectivityManager provideConnectivityManager() {
-            when(connectivityManager.getActiveNetworkInfo()).thenReturn(networkInfo);
-            return connectivityManager;
+            when(mConnectivityManager.getActiveNetworkInfo()).thenReturn(mNetworkInfo);
+            return mConnectivityManager;
+        }
+
+        @Provides
+        @Singleton
+        public Connect provideConnect() {
+            return mConnect;
         }
     }
 }
