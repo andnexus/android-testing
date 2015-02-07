@@ -3,9 +3,8 @@ package com.andnexus.android.tests;
 import com.andnexus.connect.Connect;
 import com.andnexus.model.Data;
 
-import android.app.KeyguardManager;
+import android.app.Activity;
 import android.content.Context;
-import android.content.pm.ApplicationInfo;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -40,6 +39,9 @@ public class MainActivity extends ActionBarActivity implements SwipeRefreshLayou
     @Inject
     Connect mConnect;
 
+    @Inject
+    OnCreateListener mOnCreateListener;
+
     @InjectView(R.id.refresh)
     SwipeRefreshLayout mRefreshView;
 
@@ -57,9 +59,9 @@ public class MainActivity extends ActionBarActivity implements SwipeRefreshLayou
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        disableLockScreen();
-
         ((App) getApplication()).graph().inject(this);
+
+        mOnCreateListener.onCreate(this);
 
         setContentView(R.layout.activity_main);
         ButterKnife.inject(this);
@@ -68,19 +70,6 @@ public class MainActivity extends ActionBarActivity implements SwipeRefreshLayou
         onCreateRefreshView();
 
         onRefresh();
-    }
-
-    /**
-     * Disable device lock screen for UI testing.
-     */
-    private void disableLockScreen() {
-        // http://developer.android.com/tools/testing/activity_testing.html#UnlockDevice
-        final boolean isDebuggable = (0 != (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE));
-        if (isDebuggable) {
-            KeyguardManager keyguardManager = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
-            KeyguardManager.KeyguardLock lock = keyguardManager.newKeyguardLock(MainActivity.class.getSimpleName());
-            lock.disableKeyguard();
-        }
     }
 
     private void onCreateListView() {
@@ -155,6 +144,11 @@ public class MainActivity extends ActionBarActivity implements SwipeRefreshLayou
         return activeNetworkInfo == null || !activeNetworkInfo.isConnected();
     }
 
+    public interface OnCreateListener {
+
+        void onCreate(Activity activity);
+    }
+
     @dagger.Module
     public final static class Module {
 
@@ -176,6 +170,15 @@ public class MainActivity extends ActionBarActivity implements SwipeRefreshLayou
             return new Connect(mContext.getString(R.string.url_backend));
         }
 
-    }
+        @Provides
+        @Singleton
+        public OnCreateListener provideOnCreateListener() {
+            return new OnCreateListener() {
+                @Override
+                public void onCreate(Activity activity) {
 
+                }
+            };
+        }
+    }
 }

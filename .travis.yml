@@ -46,5 +46,5 @@ before_script:
 script:
   # Necessary in Container-Based-Infrastructure on Travis CI
   - mvn org.apache.maven.plugins:maven-dependency-plugin:2.1:get -DrepoUrl=https://oss.sonatype.org/content/repositories/snapshots -Dartifact=com.google.dagger:dagger:2.0-SNAPSHOT
-  - ./gradlew build -PdisablePreDex
   - ./gradlew connectedAndroidTest -PdisablePreDex
+  - ./gradlew build -PdisablePreDex
