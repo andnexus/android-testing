@@ -2,6 +2,9 @@ package com.andnexus.android.tests;
 
 import com.andnexus.model.Data;
 
+import android.os.AsyncTask;
+import android.support.annotation.IdRes;
+import android.support.test.espresso.Espresso;
 import android.test.suitebuilder.annotation.LargeTest;
 
 import java.util.ArrayList;
@@ -9,7 +12,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static android.support.test.espresso.Espresso.onData;
 import static android.support.test.espresso.Espresso.onView;
 import static android.support.test.espresso.action.ViewActions.click;
 import static android.support.test.espresso.assertion.ViewAssertions.matches;
@@ -20,6 +22,7 @@ import static com.andnexus.connect.Connect.ConnectException;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.Is.is;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @LargeTest
@@ -97,9 +100,32 @@ public class MainActivityTest extends ActivityTest {
         // Test
         refresh();
 
-        onData(allOf(is(instanceOf(Data.class))))
-                .inAdapterView(withId(R.id.list))
-                .atPosition(99)
-                .check(matches(withText("99")));
+        onData(R.id.list, 99, "99");
+    }
+
+    public void testShouldNotExecuteTaskIfIsRunning() throws ConnectException {
+
+        when(mConnectivityManager.getActiveNetworkInfo().isConnected()).thenReturn(true);
+
+        // Should refresh
+        when(mConnect.getData()).thenReturn(Arrays.asList(new Data[]{new Data(1)}));
+        mActivity.mTask = null;
+
+        refresh();
+        onData(R.id.list, 0, "1");
+
+        // Should not refresh
+        when(mConnect.getData()).thenReturn(Arrays.<Data>asList(new Data[]{new Data(2)}));
+        mActivity.mTask = mock(AsyncTask.class);
+
+        refresh();
+        onData(R.id.list, 0, "1");
+    }
+
+    void onData(@IdRes int res, int position, String expected) {
+        Espresso.onData(allOf(is(instanceOf(Data.class))))
+                .inAdapterView(withId(res))
+                .atPosition(position)
+                .check(matches(withText(expected)));
     }
 }

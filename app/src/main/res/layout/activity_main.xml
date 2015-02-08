@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<merge xmlns:android="http://schemas.android.com/apk/res/android">
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+       xmlns:tools="http://schemas.android.com/tools">
 
     <android.support.v4.widget.SwipeRefreshLayout
             android:layout_width="match_parent"
@@ -16,6 +17,7 @@
     </android.support.v4.widget.SwipeRefreshLayout>
 
     <TextView
+            tools:text="@string/empty"
             android:id="@+id/empty"
             android:indeterminate="true"
             android:layout_gravity="center"
