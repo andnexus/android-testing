@@ -55,6 +55,8 @@ public class MainActivity extends ActionBarActivity implements SwipeRefreshLayou
 
     List<Data> mData = new ArrayList<Data>();
 
+    AsyncTask<Void, Void, List<Data>> mTask;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -99,44 +101,46 @@ public class MainActivity extends ActionBarActivity implements SwipeRefreshLayou
 
     @Override
     public void onRefresh() {
+        if (mTask == null) {
+            mTask = new AsyncTask<Void, Void, List<Data>>() {
 
-        new AsyncTask<Void, Void, List<Data>>() {
-
-            @Override
-            protected void onPreExecute() {
-                super.onPreExecute();
-                mData.clear();
-                mAdapter.notifyDataSetChanged();
-                mEmptyView.setText(null);
-            }
-
-            @Override
-            protected List<Data> doInBackground(Void... params) {
-                List<Data> data = Collections.EMPTY_LIST;
-                try {
-                    data = mConnect.getData();
-                } catch (ConnectException e) {
-                    Log.e("Connect", e.getMessage(), e);
-                }
-                return data;
-            }
-
-            @Override
-            protected void onPostExecute(List<Data> data) {
-                super.onPostExecute(data);
-                if (data.size() == 0) {
-                    if (isOffline()) {
-                        mEmptyView.setText(R.string.offline);
-                    } else {
-                        mEmptyView.setText(R.string.empty);
-                    }
-                } else {
-                    mData.addAll(data);
+                @Override
+                protected void onPreExecute() {
+                    super.onPreExecute();
+                    mData.clear();
                     mAdapter.notifyDataSetChanged();
+                    mEmptyView.setText(null);
                 }
-                mRefreshView.setRefreshing(false);
-            }
-        }.execute();
+
+                @Override
+                protected List<Data> doInBackground(Void... params) {
+                    List<Data> data = Collections.EMPTY_LIST;
+                    try {
+                        data = mConnect.getData();
+                    } catch (ConnectException e) {
+                        Log.e("Connect", e.getMessage(), e);
+                    }
+                    return data;
+                }
+
+                @Override
+                protected void onPostExecute(List<Data> data) {
+                    super.onPostExecute(data);
+                    if (data.size() == 0) {
+                        if (isOffline()) {
+                            mEmptyView.setText(R.string.offline);
+                        } else {
+                            mEmptyView.setText(R.string.empty);
+                        }
+                    } else {
+                        mData.addAll(data);
+                        mAdapter.notifyDataSetChanged();
+                    }
+                    mRefreshView.setRefreshing(false);
+                    mTask = null;
+                }
+            }.execute();
+        }
     }
 
     private boolean isOffline() {
