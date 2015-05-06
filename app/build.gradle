@@ -48,8 +48,8 @@ dependencies {
 
     // Dagger
     provided 'javax.annotation:javax.annotation-api:1.2'
-    compile group: "com.google.dagger", name: "dagger", version: "2.0-SNAPSHOT", changing: true
-    apt group: "com.google.dagger", name: "dagger-compiler", version: "2.0-SNAPSHOT", changing: true
+    compile group: "com.google.dagger", name: "dagger", version: "2.0", changing: true
+    apt group: "com.google.dagger", name: "dagger-compiler", version: "2.0", changing: true
 
     // Mockito
     debugCompile 'com.google.dexmaker:dexmaker-mockito:1.0'

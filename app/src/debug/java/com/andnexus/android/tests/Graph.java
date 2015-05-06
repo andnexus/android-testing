@@ -20,7 +20,7 @@ public interface Graph {
 
         public static Graph init(Context context) {
             System.setProperty("dexmaker.dexcache", context.getCacheDir().getPath());
-            return Dagger_Graph.builder()
+            return DaggerGraph.builder()
                     .module(new Module())
                     .build();
         }

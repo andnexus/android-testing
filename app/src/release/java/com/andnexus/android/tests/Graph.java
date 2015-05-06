@@ -17,7 +17,7 @@ public interface Graph {
     public final static class Initializer {
 
         public static Graph init(Context context) {
-            return Dagger_Graph.builder()
+            return DaggerGraph.builder()
                     .module(new Module(context))
                     .build();
         }
